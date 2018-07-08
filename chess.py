@@ -6,6 +6,7 @@ Russell Jeffery
 7 July 2018
 '''
 
+from copy import deepcopy
 import pygame
 pygame.init()
 
@@ -31,7 +32,10 @@ class Board():
     def __init__(self, screen_size):
         # Generate an 8x8 array.
         col = [0] * 8
-        self.grid = [col] * 8
+        self.grid = []
+        for i in range(8):
+            # There is no list method that actually makes deep copies, so I had to import one.
+            self.grid.append(deepcopy(col))
 
         # Define the size of one board square.
         self.square_size = screen_size[1] // 8, screen_size[1] // 8 # width, height
@@ -78,6 +82,7 @@ class Board():
         w_rook = pygame.image.load("w_rook.png").convert_alpha()
         w_rook = pygame.transform.scale(w_rook, self.square_size)
 
+
         # Load the pieces into the array.
         # First the black pieces.
         self.grid[0][0] = b_rook
@@ -114,11 +119,9 @@ class Board():
             for piece in column:
                 # Translate grid coordinates to pixel coordinates.
                 position = x_position * self.square_size[0], y_position * self.square_size[1]
-                print(position)
 
                 if piece != 0:
                     rect = piece.get_rect()
-                    print(rect)
                     rect = rect.move(position[0], position[1])
                     screen.blit(piece, rect)
                 else:
