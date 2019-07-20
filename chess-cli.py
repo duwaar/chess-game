@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """
-Description.
+A command-line chess game.
 
-R Jeffery
-Date
+14 July 2019
 """
 
-#import pygame
-#pygame.init()
 import os
 
 
@@ -17,7 +14,7 @@ class Chess(object):
     capturing pieces."""
     def __init__(self):
         """Set the board and wait for the start signal."""
-        self.message = "Let the game begin!"
+        self.message = "Let the game begin!\n"
         self.board = [["BR","BN","BB","BQ","BK","BB","BN","BR"],\
                       ["BP","BP","BP","BP","BP","BP","BP","BP"],\
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
@@ -45,7 +42,7 @@ class Chess(object):
             # Update the game state.
             if self.state == "BLACK" or self.state == "WHITE":
                 self.draw_board()
-                self.move()
+                self.update()
             else:
                 assert False, "Impossible state {} requested.".format(self.state)
 
@@ -64,40 +61,82 @@ class Chess(object):
 
         print()
 
-    def move(self):
+    def update(self):
         """Execute move, and update display"""
         # Get sanitized user input.
-        move = input("{}, make your move: ".format(self.state)).strip().lower()
+        command = input("{}, make your move: ".format(self.state)).strip().lower()
 
-        # Execute the move.
-        if move == "quit":
+        # Execute the command.
+        if command == "quit":
             print("Quitting chess.")
             self.state = "NONE WINS"
-        elif self.is_legal_move(move):
-            self.board[int(move[3])][int(move[4])] = self.board[int(move[0])][int(move[1])]
-            self.board[int(move[0])][int(move[1])] = "  "
-            self.message += "Move \"{}\" executed by \"{}\".\n".format(move, self.state)
+        elif command == "help":
+            self.message += "There is no help available at this time.\n"
+        elif self.is_legal_move(command):
+            self.board[int(command[3])][int(command[4])] = self.board[int(command[0])][int(command[1])]
+            self.board[int(command[0])][int(command[1])] = "  "
+            self.message += "Move \"{}\" executed by \"{}\".\n".format(command, self.state)
             self.state = "WHITE" if self.state == "BLACK" else "BLACK"
         else:
-            self.message += "\"{}\" is not a legal move. You must make a legal move or quit.\n".format(move)
-            self.state = self.state # Don't change the stat.
+            self.message += "\"{}\" is not a valid command.\n".format(command)
+            self.state = self.state # Don't change the state.
 
-    def is_legal_move(self, move):
+    def is_legal_move(self, command):
         """Checks if move is formatted like a move command, then checks for legality."""
-        if len(move) == 5\
-                and len(move.split()) == 2\
-                and self.board[int(move[0])][int(move[1])].strip() != ""\
+        # Is this a valid move command?
+        if len(command) == 5\
+                and len(command.split()) == 2\
+                and 0 <= int(command[0]) <= 7\
+                and 0 <= int(command[1]) <= 7\
+                and 0 <= int(command[3]) <= 7\
+                and 0 <= int(command[4]) <= 7\
                 :
-                #and 0 <= int(move[0]) <= 7\
-                #and 0 <= int(move[1]) <= 7\
-                #and 0 <= int(move[3]) <= 7\
-                #and 0 <= int(move[4]) <= 7\
-                #:
-            piece = self.board[int(move[0])][int(move[1])]
+            x1 = int(command[1])
+            x2 = int(command[4])
+            y1 = int(command[0])
+            y2 = int(command[3])
+            piece = self.board[y1][x1]
+            destination = self.board[y2][x2]
+            dx = x2 - x1
+            dy = y2 - y1
+
+            # Is the move legal?
             if piece[0] != self.state[0]:
-                self.message += "You cannot move your opponent's pieces.\n"
+                self.message += "The {} is not your piece to move.\n".format(piece)
                 return False
-            return True
+            #elif not self.collides(x1, x2, y1, y2):
+            #    self.message += "You cannot capture your own {}.\n".format(destination)
+            #    return False
+            elif piece[0] == destination[0]:
+                self.message += "You cannot capture your own {}.\n".format(destination)
+                return False
+            elif and dx == 0 and dy == 0:
+                self.message += "You must move the piece at least one space.\n"
+                return False
+            else:
+                # Apply the piece-specific rules.
+                if piece[1] == "B"\
+                        and abs(dx) == abs(dy):
+                    return True
+                elif piece[1] == "R"\
+                        and (dx == 0 or dy == 0):
+                    return True
+                elif piece[1] == "Q"\
+                        and (abs(dx) == abs(dy) or dx == 0 or dy == 0):
+                    return True
+                elif piece[1] == "K"\
+                        and abs(dx) <= 1 and abs(dy) <= 1:
+                    return True
+                elif piece[1] == "N"\
+                        and ((abs(dx) == 1 and abs(dy) == 2) or (abs(dx) == 2 and abs(dy) == 1)):
+                    return True
+                elif piece == "BP"\
+                        and (dx == 0 and dy == 1 and destination.strip() == "")\
+                        or (abs(dx) == 1 and dy == 1 and destination.strip() != "")\
+                        or (y1 == 1 and dy == 2 and dx == 0):
+                    return True
+                else:
+                    return False
         else:
             self.message += "Input not understood.\n"
             return False
