@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-"""
+'''
 A command-line chess game.
 
 14 July 2019
-"""
+'''
 
 import os
 
 
 class Chess(object):
-    """The Chess object holds the game's state, playing pieces, board, and methods for moving and
-    capturing pieces."""
+    '''The Chess object holds the game's state, playing pieces, board, and methods for moving and
+    capturing pieces.'''
     def __init__(self):
-        """Set the board and wait for the start signal."""
-        self.message = "Let the game begin!\n"
+        '''Set the board and wait for the start signal.'''
+        self.message = ""
         self.board = [["BR","BN","BB","BQ","BK","BB","BN","BR"],\
                       ["BP","BP","BP","BP","BP","BP","BP","BP"],\
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
@@ -23,33 +23,71 @@ class Chess(object):
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
                       ["WP","WP","WP","WP","WP","WP","WP","WP"],\
                       ["WR","WN","WB","WQ","WK","WB","WN","WR"]]
-        self.draw_board()
-        input("The board is set. Hit enter to begin.")
-        os.system("clear")
-        self.state = "WHITE" # Because white always goes first.
 
     def play(self):
-        """The main game loop"""
-        while self.state != "NONE WINS"\
-                and self.state != "WHITE WINS"\
-                and self.state != "BLACK WINS"\
-                :
+        '''The main game'''
+        self.draw_board()
+        input("The board is set. Hit enter to begin.")
+        self.message += "Let the game begin!\n"
+        os.system("clear")
+        self.state = "WHITE" # Because white always goes first.
+        play = True
+        while play:
             # Provide feedback to player(s).
             os.system("clear")
             print("{}".format(self.message))
             self.message = ""
 
             # Update the game state.
-            if self.state == "BLACK" or self.state == "WHITE":
-                self.draw_board()
+            if self.state == "NONE WINS"\
+                    or self.state == "WHITE WINS"\
+                    or self.state == "BLACK WINS":
+                play = False
+                self.message += "{}!".format(self.state)
+            elif self.state == "BLACK" or self.state == "WHITE":
                 self.update()
             else:
                 assert False, "Impossible state {} requested.".format(self.state)
 
-        print("{}!".format(self.state))
+        print("{}".format(self.message))
+
+    def update(self):
+        '''Execute move, and update display'''
+        self.draw_board()
+        # Get sanitized user input.
+        command = input("{}, make your move: ".format(self.state)).strip().lower()
+
+        # Execute the command.
+        if command == "quit":
+            self.message += "{} gave up and flipped the board.\n".format(self.state)
+            self.state = "NONE WINS"
+        elif command == "pass":
+            self.message += "{} forfeit their turn.\n".format(self.state)
+            self.state = "WHITE" if self.state == "BLACK" else "BLACK"
+        elif command == "help":
+            self.message += "There is no help available at this time.\n"
+            self.state = self.state
+        elif self.is_legal_move(command):
+            captured_piece = self.board[int(command[3])][int(command[4])]
+            self.board[int(command[3])][int(command[4])] = self.board[int(command[0])][int(command[1])]
+            self.board[int(command[0])][int(command[1])] = "  "
+            self.message += "Move \"{}\" was executed by {}.\n".format(command, self.state)
+
+            if captured_piece.strip() != "":
+                self.message += "{} captured {}.\n".format(self.state, captured_piece)
+
+            if captured_piece == "WK":
+                self.state = "BLACK WINS"
+            elif captured_piece == "BK":
+                self.state = "WHITE WINS"
+            else:
+                self.state = "WHITE" if self.state == "BLACK" else "BLACK"
+        else:
+            self.message += "\"{}\" is not a valid command.\n".format(command)
+            self.state = self.state # Don't change the state.
 
     def draw_board(self):
-        """Print the board in the terminal."""
+        '''Print the board in the terminal.'''
         for i, row in enumerate(self.board):
             print(i, row)
             #print(8-i, row)
@@ -61,28 +99,8 @@ class Chess(object):
 
         print()
 
-    def update(self):
-        """Execute move, and update display"""
-        # Get sanitized user input.
-        command = input("{}, make your move: ".format(self.state)).strip().lower()
-
-        # Execute the command.
-        if command == "quit":
-            print("Quitting chess.")
-            self.state = "NONE WINS"
-        elif command == "help":
-            self.message += "There is no help available at this time.\n"
-        elif self.is_legal_move(command):
-            self.board[int(command[3])][int(command[4])] = self.board[int(command[0])][int(command[1])]
-            self.board[int(command[0])][int(command[1])] = "  "
-            self.message += "Move \"{}\" executed by \"{}\".\n".format(command, self.state)
-            self.state = "WHITE" if self.state == "BLACK" else "BLACK"
-        else:
-            self.message += "\"{}\" is not a valid command.\n".format(command)
-            self.state = self.state # Don't change the state.
-
     def is_legal_move(self, command):
-        """Checks if move is formatted like a move command, then checks for legality."""
+        '''Checks if move is formatted like a move command, then checks for legality.'''
         # Is this a valid move command?
         if len(command) == 5\
                 and len(command.split()) == 2\
@@ -91,6 +109,7 @@ class Chess(object):
                 and 0 <= int(command[3]) <= 7\
                 and 0 <= int(command[4]) <= 7\
                 :
+            # Parse the move command.
             x1 = int(command[1])
             x2 = int(command[4])
             y1 = int(command[0])
@@ -100,46 +119,65 @@ class Chess(object):
             dx = x2 - x1
             dy = y2 - y1
 
-            # Is the move legal?
+            # Legality checks
             if piece[0] != self.state[0]:
                 self.message += "The {} is not your piece to move.\n".format(piece)
                 return False
-            #elif not self.collides(x1, x2, y1, y2):
-            #    self.message += "You cannot capture your own {}.\n".format(destination)
-            #    return False
-            elif piece[0] == destination[0]:
-                self.message += "You cannot capture your own {}.\n".format(destination)
-                return False
-            elif and dx == 0 and dy == 0:
+            elif dx == 0 and dy == 0:
                 self.message += "You must move the piece at least one space.\n"
+                return False
+            elif destination[0] == self.state[0]:
+                self.message += "You cannot capture your own {}.\n".format(destination)
                 return False
             else:
                 # Apply the piece-specific rules.
                 if piece[1] == "B"\
+                        and not self.collides(x1, y1, x2, y2)\
                         and abs(dx) == abs(dy):
+                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("B", piece)
                     return True
                 elif piece[1] == "R"\
+                        and not self.collides(x1, y1, x2, y2)\
                         and (dx == 0 or dy == 0):
+                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("R", piece)
                     return True
                 elif piece[1] == "Q"\
-                        and (abs(dx) == abs(dy) or dx == 0 or dy == 0):
+                        and not self.collides(x1, y1, x2, y2)\
+                        and ((abs(dx) == abs(dy)) or (dx == 0 or dy == 0)):
+                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("Q", piece)
                     return True
                 elif piece[1] == "K"\
                         and abs(dx) <= 1 and abs(dy) <= 1:
+                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("K", piece)
                     return True
                 elif piece[1] == "N"\
                         and ((abs(dx) == 1 and abs(dy) == 2) or (abs(dx) == 2 and abs(dy) == 1)):
+                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("N", piece)
                     return True
                 elif piece == "BP"\
+                        and not self.collides(x1, y1, x2, y2)\
                         and (dx == 0 and dy == 1 and destination.strip() == "")\
                         or (abs(dx) == 1 and dy == 1 and destination.strip() != "")\
                         or (y1 == 1 and dy == 2 and dx == 0):
+                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("BP", piece)
+                    return True
+                elif piece == "WP"\
+                        and not self.collides(x1, y1, x2, y2)\
+                        and (dx == 0 and dy == -1 and destination.strip() == "")\
+                        or (abs(dx) == 1 and dy == -1 and destination.strip() != "")\
+                        or (y1 == 6 and dy == -2 and dx == 0):
+                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("WP", piece)
                     return True
                 else:
+                    self.message += "That is not a valid move for the {}.\n".format(piece)
                     return False
         else:
             self.message += "Input not understood.\n"
             return False
+
+    def collides(self, x1, y1, x2, y2):
+        '''Determines whether there is an obstacle in the line of movement or not.'''
+        return False
 
 
 def main():
