@@ -9,12 +9,25 @@ A command-line chess game.
 import os
 
 
+def sign(x):
+    '''Return +1 for positive numbers, -1 for negative numbers, and 0 for zero.'''
+    assert type(x) == int, "{} is not an int. sign() only takes ints"
+
+    if x == 0:
+        return 0
+    else:
+        return x // abs(x)
+
+
 class Chess(object):
-    '''The Chess object holds the game's state, playing pieces, board, and methods for moving and
-    capturing pieces.'''
+    '''
+    The Chess object holds the game's state, playing pieces, board, and methods for moving and
+    capturing pieces.
+    '''
     def __init__(self):
         '''Set the board and wait for the start signal.'''
         self.message = ""
+        '''
         self.board = [["BR","BN","BB","BQ","BK","BB","BN","BR"],\
                       ["BP","BP","BP","BP","BP","BP","BP","BP"],\
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
@@ -23,6 +36,15 @@ class Chess(object):
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
                       ["WP","WP","WP","WP","WP","WP","WP","WP"],\
                       ["WR","WN","WB","WQ","WK","WB","WN","WR"]]
+        '''
+        self.board = [["  ","  ","  ","  ","  ","  ","  ","  "],\
+                      ["  ","  ","  ","  ","  ","  ","  ","  "],\
+                      ["  ","WP","WP","WP","  ","  ","  ","  "],\
+                      ["  ","WP","WQ","WP","  ","  ","BQ","  "],\
+                      ["  ","WP","WP","WP","  ","  ","  ","  "],\
+                      ["  ","  ","  ","  ","  ","  ","  ","  "],\
+                      ["  ","  ","  ","  ","  ","  ","  ","  "],\
+                      ["  ","  ","  ","  ","  ","  ","  ","  "]]
 
     def play(self):
         '''The main game'''
@@ -35,7 +57,7 @@ class Chess(object):
         while play:
             # Provide feedback to player(s).
             os.system("clear")
-            print("{}".format(self.message))
+            print(self.message)
             self.message = ""
 
             # Update the game state.
@@ -177,7 +199,51 @@ class Chess(object):
 
     def collides(self, x1, y1, x2, y2):
         '''Determines whether there is an obstacle in the line of movement or not.'''
-        return False
+        dx = x2 - x1
+        dy = y2 - y1
+        x_range = [x1, x2]
+        y_range = [y1, y2]
+        piece = self.board[y1][x1]
+        collision = False
+        if x1 == x2:
+            y_range.sort()
+            for i in range(y_range[0] + 1, y_range[1]):
+                obstacle = self.board[i][x1].strip()
+                if obstacle != "":
+                    collision = True
+                    break
+        elif y1 == y2:
+            x_range.sort()
+            for i in range(x_range[0] + 1, x_range[1]):
+                obstacle = self.board[y1][i].strip()
+                if obstacle != "":
+                    collision = True
+                    break
+        elif abs(dx) == abs(dy):
+            if x1 > x2:
+                x_range.reverse()
+                y_range.reverse()
+            x_sign = sign(x_range[1] - x_range[0])
+            y_sign = sign(y_range[1] - y_range[0])
+            if x_sign == y_sign:
+                for i, j in zip(range(x_range[0] + 1, x_range[1]), range(y_range[0] + 1, y_range[1])):
+                    obstacle = self.board[j][i].strip()
+                    if obstacle != "":
+                        collision = True
+                        break
+            else:
+                for i, j in zip(range(x_range[0] + 1, x_range[1]), range(1, abs(dy))):
+                    j = y_range[0] - j
+                    obstacle = self.board[j][i].strip()
+                    if obstacle != "":
+                        collision = True
+                        break
+        else:
+            assert True, "The move \"{}{} {}{}\" can't be checked for collisions".format(x1, y1, x2, y2)
+
+        if collision:
+            self.message += "{} collided with {}.\n".format(piece, obstacle)
+        return collision
 
 
 def main():
