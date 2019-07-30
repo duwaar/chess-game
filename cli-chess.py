@@ -19,6 +19,21 @@ def sign(x):
         return x // abs(x)
 
 
+class Movement(object):
+    '''Stores movement information for clearer and more convenient movement operations.'''
+    def __init__(self, board, x1, y1, x2, y2):
+        self.x1 = x1
+        self.x2 = x2
+        self.y1 = y1
+        self.y2 = y2
+
+        self.dx = x2 - x1
+        self.dy = y2 - y1
+        self.piece = board[y1][x1]
+        self.piece_color = self.piece[0]
+        self.destination = board[y2][x2]
+
+
 class Chess(object):
     '''
     The Chess object holds the game's state, playing pieces, board, and methods for moving and
@@ -27,7 +42,6 @@ class Chess(object):
     def __init__(self):
         '''Set the board and wait for the start signal.'''
         self.message = ""
-        '''
         self.board = [["BR","BN","BB","BQ","BK","BB","BN","BR"],\
                       ["BP","BP","BP","BP","BP","BP","BP","BP"],\
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
@@ -36,15 +50,6 @@ class Chess(object):
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
                       ["WP","WP","WP","WP","WP","WP","WP","WP"],\
                       ["WR","WN","WB","WQ","WK","WB","WN","WR"]]
-        '''
-        self.board = [["  ","  ","  ","  ","  ","  ","  ","  "],\
-                      ["  ","  ","  ","  ","  ","  ","  ","  "],\
-                      ["  ","WP","WP","WP","  ","  ","  ","  "],\
-                      ["  ","WP","WQ","WP","  ","  ","BQ","  "],\
-                      ["  ","WP","WP","WP","  ","  ","  ","  "],\
-                      ["  ","  ","  ","  ","  ","  ","  ","  "],\
-                      ["  ","  ","  ","  ","  ","  ","  ","  "],\
-                      ["  ","  ","  ","  ","  ","  ","  ","  "]]
 
     def play(self):
         '''The main game'''
@@ -90,13 +95,12 @@ class Chess(object):
             self.message += "There is no help available at this time.\n"
             self.state = self.state
         elif self.is_legal_move(command):
+            move = Movement(self.board, command[1], command[0], command[4], command[3])
             captured_piece = self.board[int(command[3])][int(command[4])]
-            self.board[int(command[3])][int(command[4])] = self.board[int(command[0])][int(command[1])]
-            self.board[int(command[0])][int(command[1])] = "  "
+            self.board[move.y2][move.x2] = self.board[move.y1][move.x1]
+            self.board[move.y1][move.x1] = ""
             self.message += "Move \"{}\" was executed by {}.\n".format(command, self.state)
-
-            if captured_piece.strip() != "":
-                self.message += "{} captured {}.\n".format(self.state, captured_piece)
+            self.message += "{} captured {}.\n".format(move.piece, captured_piece)
 
             if captured_piece == "WK":
                 self.state = "BLACK WINS"
@@ -121,9 +125,8 @@ class Chess(object):
 
         print()
 
-    def is_legal_move(self, command):
-        '''Checks if move is formatted like a move command, then checks for legality.'''
-        # Is this a valid move command?
+    def is_move_command(self, command):
+        '''Checks if command is formatted like a move command.'''
         if len(command) == 5\
                 and len(command.split()) == 2\
                 and 0 <= int(command[0]) <= 7\
@@ -131,71 +134,74 @@ class Chess(object):
                 and 0 <= int(command[3]) <= 7\
                 and 0 <= int(command[4]) <= 7\
                 :
-            # Parse the move command.
-            x1 = int(command[1])
-            x2 = int(command[4])
-            y1 = int(command[0])
-            y2 = int(command[3])
-            piece = self.board[y1][x1]
-            destination = self.board[y2][x2]
-            dx = x2 - x1
-            dy = y2 - y1
-
-            # Legality checks
-            if piece[0] != self.state[0]:
-                self.message += "The {} is not your piece to move.\n".format(piece)
-                return False
-            elif dx == 0 and dy == 0:
-                self.message += "You must move the piece at least one space.\n"
-                return False
-            elif destination[0] == self.state[0]:
-                self.message += "You cannot capture your own {}.\n".format(destination)
-                return False
-            else:
-                # Apply the piece-specific rules.
-                if piece[1] == "B"\
-                        and not self.collides(x1, y1, x2, y2)\
-                        and abs(dx) == abs(dy):
-                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("B", piece)
-                    return True
-                elif piece[1] == "R"\
-                        and not self.collides(x1, y1, x2, y2)\
-                        and (dx == 0 or dy == 0):
-                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("R", piece)
-                    return True
-                elif piece[1] == "Q"\
-                        and not self.collides(x1, y1, x2, y2)\
-                        and ((abs(dx) == abs(dy)) or (dx == 0 or dy == 0)):
-                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("Q", piece)
-                    return True
-                elif piece[1] == "K"\
-                        and abs(dx) <= 1 and abs(dy) <= 1:
-                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("K", piece)
-                    return True
-                elif piece[1] == "N"\
-                        and ((abs(dx) == 1 and abs(dy) == 2) or (abs(dx) == 2 and abs(dy) == 1)):
-                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("N", piece)
-                    return True
-                elif piece == "BP"\
-                        and not self.collides(x1, y1, x2, y2)\
-                        and (dx == 0 and dy == 1 and destination.strip() == "")\
-                        or (abs(dx) == 1 and dy == 1 and destination.strip() != "")\
-                        or (y1 == 1 and dy == 2 and dx == 0):
-                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("BP", piece)
-                    return True
-                elif piece == "WP"\
-                        and not self.collides(x1, y1, x2, y2)\
-                        and (dx == 0 and dy == -1 and destination.strip() == "")\
-                        or (abs(dx) == 1 and dy == -1 and destination.strip() != "")\
-                        or (y1 == 6 and dy == -2 and dx == 0):
-                    self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("WP", piece)
-                    return True
-                else:
-                    self.message += "That is not a valid move for the {}.\n".format(piece)
-                    return False
+            self.message += "Command \"{}\" is in move format.\n".format(command)
+            return True
         else:
-            self.message += "Input not understood.\n"
+            self.message += "Move command \"{}\" not understood.\n".format(command)
             return False
+
+    def is_legal_move(self, command):
+        '''Checks if move is formatted like a move command, then checks for legality.'''
+        # If this isn't even formatted like a move command, stop immediately.
+        if not self.is_move_command(command):
+            return False
+
+        # Parse the move command.
+        move = Movement(self.board, int(command[1]), int(command[0]), int(command[4]), int(command[3]))
+
+        # Legality checks
+        if move.piece_color != self.state[0]:
+            self.message += "The {} at {}{} is not your piece to move.\n".format(move.piece, move.y1, move.x1)
+            return False
+        elif move.dx == 0 and move.dy == 0:
+            self.message += "You must move the piece at least one space.\n"
+            return False
+        elif move.destination[0] == self.state[0]:
+            self.message += "You cannot capture your own {}.\n".format(move.destination)
+            return False
+        else:
+            # Apply the piece-specific rules.
+            if move.piece[1] == "B"\
+                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
+                    and abs(move.dx) == abs(move.dy):
+                self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("B", move.piece)
+                return True
+            elif move.piece[1] == "R"\
+                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
+                    and (move.dx == 0 or move.dy == 0):
+                self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("R", move.piece)
+                return True
+            elif move.piece[1] == "Q"\
+                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
+                    and ((abs(move.dx) == abs(move.dy)) or (move.dx == 0 or move.dy == 0)):
+                self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("Q", move.piece)
+                return True
+            elif move.piece[1] == "K"\
+                    and abs(move.dx) <= 1 and abs(move.dy) <= 1:
+                self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("K", move.piece)
+                return True
+            elif move.piece[1] == "N"\
+                    and ((abs(move.dx) == 1 and abs(move.dy) == 2)\
+                    or (abs(move.dx) == 2 and abs(move.dy) == 1)):
+                self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("N", move.piece)
+                return True
+            elif move.piece == "BP"\
+                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
+                    and (move.dx == 0 and move.dy == 1 and move.destination == "")\
+                    or (abs(move.dx) == 1 and move.dy == 1 and move.destination != "")\
+                    or (move.y1 == 1 and move.dy == 2 and move.dx == 0):
+                self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("BP", move.piece)
+                return True
+            elif move.piece == "WP"\
+                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
+                    and (move.dx == 0 and move.dy == -1 and move.destination == "")\
+                    or (abs(move.dx) == 1 and move.dy == -1 and move.destination != "")\
+                    or (move.y1 == 6 and move.dy == -2 and move.dx == 0):
+                self.message += "Rules for \"{}\" were applied to \"{}\".\n".format("WP", move.piece)
+                return True
+            else:
+                self.message += "That is not a valid move for the {}.\n".format(move.piece)
+                return False
 
     def collides(self, x1, y1, x2, y2):
         '''Determines whether there is an obstacle in the line of movement or not.'''
