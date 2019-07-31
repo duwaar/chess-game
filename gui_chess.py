@@ -6,12 +6,11 @@ A command-line chess game.
 14 July 2019
 '''
 
-import os, pyglet
-
+import os, pyglet, logging
 
 def sign(x):
     '''Return +1 for positive numbers, -1 for negative numbers, and 0 for zero.'''
-    assert type(x) == int, "{} is not an int. sign() only takes ints"
+    assert type(x) == int, "{} is not an int. sign() only takes ints".format(x)
 
     if x == 0:
         return 0
@@ -42,8 +41,8 @@ class Chess(object):
     def __init__(self):
         '''Setup the board and the graphics window, and wait for the start signal.'''
         self.message = ""
-        self.previous_state = "SETUP"
-        self.current_state = "WHITE"
+        self.previous_state = ""
+        self.current_state = "SETUP"
         self.board = [["BR","BN","BB","BQ","BK","BB","BN","BR"],\
                       ["BP","BP","BP","BP","BP","BP","BP","BP"],\
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
@@ -57,29 +56,38 @@ class Chess(object):
         self.background = pyglet.graphics.OrderedGroup(0)
         self.foreground = pyglet.graphics.OrderedGroup(1)
 
-        self.window = pyglet.window.Window(width=800, height=800)
+        self.window = pyglet.window.Window(width=600, height=700)
         self.window.set_caption('Python Chess')
+
+        self.mouse_position = (0, 0)
+        self.mouse_click = (0, 0)
 
         @self.window.event
         def on_draw():
-            if self.current_state == self.previous_state:
-                self.previous_state = self.current_state
-                # Draw in the pyglet window.
-                self.draw_board()
-                self.batch.draw()
+            if self.current_state != self.previous_state:
+                self.message += "State changed from \"{}\" to \"{}\".\n".format(self.previous_state, self.current_state)
+                self.change_state(self.current_state)
 
-            # Print in the command line.
-            print()
+            # Update the output and display.
+            self.draw_board()
+            self.batch.draw()
+            self.batch = pyglet.graphics.Batch() # Is this the right way to clear the batch? Seems clunky and inefficient.
             print(self.message)
             self.message = ""
 
         @self.window.event
-        def on_mouse_motion(x, y, dx, dy):
-            self.message += "mouse motion: x{}, y{}, dx{}, dy{}\n".format(x, y, dx, dy)
+        def on_key_press(key, modifiers):
+            pass
+            #self.message += "key press: key{}, mods{}\n".format(key, modifiers)
 
         @self.window.event
-        def on_mouse_press(key, modifiers):
-            self.message += "mouse press: key{}, mod{}\n".format(key, modifiers)
+        def on_mouse_motion(x, y, dx, dy):
+            self.mouse_position = (x, y)
+            self.message += "mouse position: {}\n".format(self.mouse_position)
+
+        @self.window.event
+        def on_mouse_press(x, y, button, modifiers):
+            self.message += "mouse press: x{}, y{}, button{}, modifiers{}\n".format(x, y, button, modifiers)
 
     def change_state(self, new_state):
         '''Update the current and previous states.'''
@@ -89,7 +97,7 @@ class Chess(object):
     def play(self):
         '''The main game'''
         # Set initial conditions.
-        self.message += "Let the game begin!\n\n"
+        self.message += "Let the game begin!\n"
         self.change_state("WHITE")
 
         # Start the game loop.
@@ -127,10 +135,13 @@ class Chess(object):
             elif captured_piece == "BK":
                 self.change_state("WHITE WINS")
             else:
-                self.change_state("WHITE") if self.current_state == "BLACK" else "BLACK"
+                if self.current_state == "BLACK":
+                    self.change_state("WHITE")
+                else:
+                    self.change_state("BLACK")
         else:
             self.message += "\"{}\" is not a valid command.\n".format(command)
-            # Don't change the state.
+            # Don't change state.
 
     def draw_board(self):
         '''Display the board.'''
@@ -138,23 +149,71 @@ class Chess(object):
         for i, row in enumerate(self.board):
             print(i, row)
             #print(8-i, row)
-
         print("    ", end="")
         for i in range(0,8):
             print("{}     ".format(i), end="")
             #print("{}     ".format(chr(i+65)), end="")
-
         print()
 
         # Draw the board in the pyglet window.
-        height, window = self.window.get_size()
+        width, height = self.window.get_size()
+        margin = 15
+        dim = height if height < width else width
+        dim = (dim - margin) // 8
+        # The y-index label.
+        self.batch.add(4, pyglet.gl.GL_QUADS, None,\
+                       ('v2i', (0,      height,\
+                                margin, height,\
+                                margin, height - dim*8,\
+                                0,      height - dim*8)),\
+                       ('c3B', (120, 120, 120) * 4))
+        # The x-index label.
+        self.batch.add(4, pyglet.gl.GL_QUADS, None,\
+                       ('v2i', (0,      height - dim*8,\
+                                width,  height - dim*8,\
+                                width,  height - dim*8 - margin,\
+                                0,      height - dim*8 - margin)),\
+                       ('c3B', (120, 120, 120) * 4))
+        # The info board.
+        self.batch.add(4, pyglet.gl.GL_QUADS, None,\
+                       ('v2i', (0,      height - dim*8 - margin,\
+                                width,  height - dim*8 - margin,\
+                                width,  0,\
+                                0,      0)),\
+                       ('c3B', (220, 220, 220) * 4))
+        pyglet.text.Label(text=self.message,\
+                          font_name='Courier New',\
+                          font_size=12,\
+                          color=(0, 0, 0, 255),\
+                          x=0, y=0,\
+                          width=width,\
+                          height=height - dim*8 - margin,\
+                          anchor_x='left',\
+                          anchor_y='bottom',\
+                          multiline=True,\
+                          batch=self.batch)
+        # The checkerboard.
         for j, row in enumerate(self.board):
-            for i, column in enumerate(row):
-                if (i + j) % 2 == 0:
+            for i, square in enumerate(row):
+                # Define the dimensions of the square.
+                top = height - dim*j
+                bottom = height - dim*(j + 1)
+                left = margin + dim*i
+                right = margin + dim*(i + 1)
+                # Define the color of the square.
+                if (left < self.mouse_position[0] < right) and (bottom < self.mouse_position[1] < top):
+                    color = (0, 255, 0)
+                elif (i + j) % 2 == 0:
                     color = (255, 255, 255)
                 else:
                     color = (0, 0, 0)
-
+                # Add the square to the list of things to draw.
+                self.batch.add(4, pyglet.gl.GL_QUADS, None,\
+                               ('v2i', (left,  top,\
+                                        right, top,\
+                                        right, bottom,\
+                                        left,  bottom)),\
+                               ('c3B', color * 4))
 
     def is_move_command(self, command):
         '''Checks if command is formatted like a move command.'''
