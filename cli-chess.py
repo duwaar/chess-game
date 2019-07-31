@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 '''
+cli-chess
 A command-line chess game.
 
 14 July 2019
