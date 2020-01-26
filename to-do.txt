@@ -1,0 +1,27 @@
+A to-do list of tasks for the python chess game.
+
+Known Bugs:
+
+Necessary:
+ -Use the Chess.board array to hold more data than just names of pieces.
+     -piece names
+     -dimensions of each square
+     -selections
+ -Implement graphics (probably with pyglet).
+    Of course, this is the point of the project, but it sure has taken a long time to get here. At
+    this point, the list of necessary graphics is something like,
+     -pieces
+     -mouseover and click highlights
+ -Implement graphical input.
+    Split the "update" method into different methods for each input type/condition.
+
+Optional:
+ -Add a border around the game window
+ -Create a state class
+ -Network game (human to human)
+ -Additional rules
+     -Pawn promotion
+     -Castling
+     -Stalemate
+ -AI players
+    Don't do this from scratch--use a free, open-source, chess engine, like stockfish.

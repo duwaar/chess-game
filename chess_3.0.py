@@ -8,6 +8,7 @@ A command-line chess game.
 '''
 
 import os
+import pyglet
 
 
 def sign(x):
@@ -51,11 +52,37 @@ class Chess(object):
                       ["  ","  ","  ","  ","  ","  ","  ","  "],\
                       ["WP","WP","WP","WP","WP","WP","WP","WP"],\
                       ["WR","WN","WB","WQ","WK","WB","WN","WR"]]
+        
+        self.window = pyglet.window.Window(width=600, height=700)
+        self.window.set_caption('Python Chess')
+
+        self.batch = pyglet.graphics.Batch()
+        self.background = pyglet.graphics.OrderedGroup(0)
+        self.foreground = pyglet.graphics.OrderedGroup(1)
+
+        self.mouse_position = (0, 0)
+        self.mouse_click = (0, 0)
+
+        @self.window.event
+        def on_draw():
+            self.draw_board()
+
+        @self.window.event
+        def on_key_press(key, modifiers):
+            pass
+
+        @self.window.event
+        def on_mouse_motion(x, y, dx, dy):
+            pass
+
+        @self.window.event
+        def on_mouse_press(x, y, button, modifiers):
+            pass
 
     def play(self):
         '''The main game'''
-        self.draw_board()
-        input("The board is set. Hit enter to begin.")
+        self.print_board()
+        #input("The board is set. Hit enter to begin.")
         self.message += "Let the game begin!\n"
         os.system("clear")
         self.state = "WHITE" # Because white always goes first.
@@ -63,7 +90,7 @@ class Chess(object):
         while play:
             # Provide feedback to player(s).
             os.system("clear")
-            print(self.message)
+            #print(self.message)
             self.message = ""
 
             # Update the game state.
@@ -77,13 +104,15 @@ class Chess(object):
             else:
                 assert False, "Impossible state {} requested.".format(self.state)
 
-        print("{}".format(self.message))
+        #print("{}".format(self.message))
 
     def update(self):
         '''Execute move, and update display'''
-        self.draw_board()
+        #self.print_board()
         # Get sanitized user input.
-        command = input("{}, make your move: ".format(self.state)).strip().lower()
+        #command = input("{}, make your move: ".format(self.state)).strip().lower()
+        self.draw_board()
+        command = 'pass'
 
         # Execute the command.
         if command == "quit":
@@ -113,7 +142,7 @@ class Chess(object):
             self.message += "\"{}\" is not a valid command.\n".format(command)
             self.state = self.state # Don't change the state.
 
-    def draw_board(self):
+    def print_board(self):
         '''Print the board in the terminal.'''
         for i, row in enumerate(self.board):
             print(i, row)
@@ -125,6 +154,44 @@ class Chess(object):
             #print("{}     ".format(chr(i+65)), end="")
 
         print()
+
+    def draw_board(self):
+        ''' Generate the board graphics in the game window. '''
+        # Basic dimensions
+        width, height = self.window.get_size()
+        margin = 16
+        if width <= height:
+            small_side = width
+            large_side = height
+        else:
+            small_side = height
+            large_side = width
+        
+        border = 16
+        board_side = small_side - border
+        square_side = board_side // 8
+
+        # The background
+        self.batch.add(4, pyglet.gl.GL_QUADS, self.background,\
+                ('v2i',    (0,      0,\
+                            0,      height,\
+                            width,  height,\
+                            width,  0)),\
+                ('c3B', (250, 250, 250) * 4))
+
+        # The foreground
+        pyglet.text.Label(text=self.message,\
+                    font_name='Courier New',\
+                    font_size=12,\
+                    color=(0, 0, 0, 255),\
+                    x=0, y=0,\
+                    width=width,\
+                    height=height - board_side - border,\
+                    anchor_x='left',\
+                    anchor_y='bottom',\
+                    multiline=True,\
+                    batch=self.batch,\
+                    group=self.foreground)
 
     def is_move_command(self, command):
         '''Checks if command is formatted like a move command.'''
