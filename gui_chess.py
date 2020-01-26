@@ -120,14 +120,14 @@ class Chess(object):
         self.window = pyglet.window.Window(width=600, height=700)
         self.window.set_caption('Python Chess')
 
+        self.batch = pyglet.graphics.Batch()
+        self.background = pyglet.graphics.OrderedGroup(0)
+        self.foreground = pyglet.graphics.OrderedGroup(1)
+        
         self.message = ""
         self.previous_state = ""
         self.current_state = "SETUP"
         self.board = Board()
-
-        self.batch = pyglet.graphics.Batch()
-        self.background = pyglet.graphics.OrderedGroup(0)
-        self.foreground = pyglet.graphics.OrderedGroup(1)
 
         self.mouse_position = (0, 0)
         self.mouse_click = (0, 0)
@@ -147,8 +147,7 @@ class Chess(object):
 
         @self.window.event
         def on_key_press(key, modifiers):
-            pass
-            #self.message += "key press: key{}, mods{}\n".format(key, modifiers)
+            self.message += "key press: key{}, mods{}\n".format(key, modifiers)
 
         @self.window.event
         def on_mouse_motion(x, y, dx, dy):
