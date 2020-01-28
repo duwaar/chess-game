@@ -53,6 +53,9 @@ class Chess(object):
                       ["WP","WP","WP","WP","WP","WP","WP","WP"],\
                       ["WR","WN","WB","WQ","WK","WB","WN","WR"]]
         
+        self.selection = []
+
+        '''
         self.window = pyglet.window.Window(width=600, height=700)
         self.window.set_caption('Python Chess')
 
@@ -78,11 +81,12 @@ class Chess(object):
         @self.window.event
         def on_mouse_press(x, y, button, modifiers):
             pass
+        '''
 
     def play(self):
         '''The main game'''
         self.print_board()
-        #input("The board is set. Hit enter to begin.")
+        input("The board is set. Hit enter to begin.")
         self.message += "Let the game begin!\n"
         os.system("clear")
         self.state = "WHITE" # Because white always goes first.
@@ -90,7 +94,7 @@ class Chess(object):
         while play:
             # Provide feedback to player(s).
             os.system("clear")
-            #print(self.message)
+            print(self.message)
             self.message = ""
 
             # Update the game state.
@@ -104,15 +108,14 @@ class Chess(object):
             else:
                 assert False, "Impossible state {} requested.".format(self.state)
 
-        #print("{}".format(self.message))
+        print("{}".format(self.message))
 
     def update(self):
         '''Execute move, and update display'''
-        #self.print_board()
+        self.print_board()
         # Get sanitized user input.
-        #command = input("{}, make your move: ".format(self.state)).strip().lower()
-        self.draw_board()
-        command = 'pass'
+        command = input("{}, make your move: ".format(self.state)).strip().lower()
+        #self.draw_board()
 
         # Execute the command.
         if command == "quit":
@@ -124,7 +127,11 @@ class Chess(object):
         elif command == "help":
             self.message += "There is no help available at this time.\n"
             self.state = self.state
-        elif self.is_legal_move(command):
+        elif command == 'select':
+            self.message += '{} selected a coordinate.\n'.format(self.state)
+            self.get_selection()
+        elif command == 'move':
+            #if self.is_legal_move():
             move = Movement(self.board, command[1], command[0], command[4], command[3])
             captured_piece = self.board[int(command[3])][int(command[4])]
             self.board[move.y2][move.x2] = self.board[move.y1][move.x1]
@@ -142,6 +149,13 @@ class Chess(object):
             self.message += "\"{}\" is not a valid command.\n".format(command)
             self.state = self.state # Don't change the state.
 
+    def get_selection(self):
+        ''' Get selection input and store it. '''
+        coordinate = input('Make your selection: ')
+        assert coordinate.isnumeric(), 'Coordinate selection input is not a numeric string.'
+        assert len(coordinate) == 2, 'Coordinate selection input has {} digits, not 2.'.format(len(coordinate))
+        self.selection.append( (coordinate[0], coordinate[1]) )
+
     def print_board(self):
         '''Print the board in the terminal.'''
         for i, row in enumerate(self.board):
@@ -153,6 +167,8 @@ class Chess(object):
             print("{}     ".format(i), end="")
             #print("{}     ".format(chr(i+65)), end="")
 
+        print()
+        print('Selections: {}'.format(self.selection))
         print()
 
     def draw_board(self):
@@ -195,12 +211,20 @@ class Chess(object):
 
     def is_move_command(self, command):
         '''Checks if command is formatted like a move command.'''
+        '''
         if len(command) == 5\
                 and len(command.split()) == 2\
                 and 0 <= int(command[0]) <= 7\
                 and 0 <= int(command[1]) <= 7\
                 and 0 <= int(command[3]) <= 7\
                 and 0 <= int(command[4]) <= 7\
+                :
+        '''
+        cmd_parts = command.split()
+        if len(cmd_parts) == 2\
+                and cmd_parts[0] == 'select'\
+                and len(cmd_parts[1]) == 2\
+                and cmd_parts[1].isnumeric()\
                 :
             self.message += "Command \"{}\" is in move format.\n".format(command)
             return True
