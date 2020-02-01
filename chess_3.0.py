@@ -21,24 +21,6 @@ def sign(x):
         return x // abs(x)
 
 
-class Movement(object):
-    '''Stores movement information for clearer and more convenient movement operations.'''
-    def __init__(self, board, x1, y1, x2, y2):
-        self.x1 = int(x1)
-        self.x2 = int(x2)
-        self.y1 = int(y1)
-        self.y2 = int(y2)
-
-        self.dx = self.x2 - self.x1
-        self.dy = self.y2 - self.y1
-        self.piece = board[self.y1][self.x1]
-        self.piece_color = self.piece[0]
-        self.destination = board[self.y2][self.x2]
-    
-    def __str__(self):
-        return '{}{} to {}{}'.format(self.x1, self.y1, self.x2, self.y2)
-
-
 class Chess(object):
     '''
     The Chess object holds the game's state, playing pieces, board, and methods for moving and
@@ -46,7 +28,7 @@ class Chess(object):
     '''
     def __init__(self):
         '''Set the board and wait for the start signal.'''
-        self.message = ''
+        self.messages = []
         self.board = [['BR','BN','BB','BQ','BK','BB','BN','BR'],\
                       ['BP','BP','BP','BP','BP','BP','BP','BP'],\
                       ['  ','  ','  ','  ','  ','  ','  ','  '],\
@@ -55,144 +37,95 @@ class Chess(object):
                       ['  ','  ','  ','  ','  ','  ','  ','  '],\
                       ['WP','WP','WP','WP','WP','WP','WP','WP'],\
                       ['WR','WN','WB','WQ','WK','WB','WN','WR']]
-        
+        self.state = 'WHITE'
         self.selection = []
     
-    def quit_game(self):
-        ''' Terminate the game. '''
-        self.message += '{} gave up and flipped the board.\n'.format(self.state)
-        self.state = 'NONE WINS'
-        self.message += '{}!'.format(self.state)
-    
-    def forfeit_turn(self):
-        ''' Skip player's turn '''
-        self.message += '{} forfeit their turn.\n'.format(self.state)
-        self.state = 'WHITE' if self.state == 'BLACK' else 'BLACK'
-        self.selection = []
-
-    def display_help(self):
-        ''' Show the help text. '''
-        self.message += 'Enter one of the following commands: quit, help, pass, select, move.\n'
-        self.state = self.state
-
-    def add_selection(self, coordinate):
-        ''' Get selection input and store it. '''
-        assert coordinate.isnumeric(), 'Coordinate selection input is not a numeric string.'
-        assert len(coordinate) == 2, 'Coordinate selection input has {} digits, not 2.'.format(len(coordinate))
-        self.message += '{} selected a coordinate.\n'.format(self.state)
-        self.selection.append( (coordinate[0], coordinate[1]) )
-    
-    def execute_move(self):
-        ''' Attempt to make a legal move with the stored coordinates. '''
-        if self.is_legal_move():
-            move = Movement(self.board,\
-                self.selection[0][1],\
-                self.selection[0][0],\
-                self.selection[1][1],\
-                self.selection[1][0],\
-                )
-            captured_piece = self.board[int(move.x1)][int(move.y1)]
-            self.board[move.y2][move.x2] = self.board[move.y1][move.x1]
-            self.board[move.y1][move.x1] = ''
-            self.message += 'Move \'{}\' was executed by {}.\n'.format(str(move), self.state)
-            self.message += '{} captured {}.\n'.format(move.piece, captured_piece)
-
-            if captured_piece == 'WK':
-                self.state = 'BLACK WINS'
-                self.message += '{}!'.format(self.state)
-            elif captured_piece == 'BK':
-                self.state = 'WHITE WINS'
-                self.message += '{}!'.format(self.state)
-            else:
-                self.state = 'WHITE' if self.state == 'BLACK' else 'BLACK'
-
-        self.selection = []
-
     def __repr__(self):
         '''Print the game in the terminal.'''
-        print(self.message)
-        print()
-        print('State: {}'.format(self.state))
-        print()
+        return (self.board, self.state, self.selection, self.selection)
+    
+    def __str__(self):
+        string = ''
 
         for i, row in enumerate(self.board):
-            print(i, row)
-            #print(8-i, row)
-
-        print('    ', end='')
+            string += '{}   {}\n'.format(i, row)
+        string += '     '
         for i in range(0,8):
-            print('{}     '.format(i), end='')
-            #print('{}     '.format(chr(i+65)), end='')
+            string += '{}     '.format(i)
+        string += '\n'
 
-        print()
-        print('Selections: {}'.format(self.selection))
-        print()
+        string += 'State: {}\n'.format(self.state)
+        string += 'Selections: {}\n'.format(self.selection)
+        
+        string += 'Latest Messages:\n'
+        for message in self.messages:
+            string += '{}\n'.format(message)
+        self.messages = []
 
-    def is_legal_move(self):
+        return string
+
+    def _is_legal_move(self, x1, y1, x2, y2):
         ''' Checks if move is allowed in chess. '''
-
-        # Parse the move command.
-        move = Movement(self.board,\
-            self.selection[0][1],\
-            self.selection[0][0],\
-            self.selection[1][1],\
-            self.selection[1][0])
+        moved_piece = self.board[y1][x1]
+        captured_piece = self.board[y2][x2]
+        dx = x2 - x1
+        dy = y2 - y1
 
         # Legality checks
-        if move.piece_color != self.state[0]:
-            self.message += 'The {} at {}{} is not your piece to move.\n'.format(move.piece, move.y1, move.x1)
+        if moved_piece[0] != self.state[0]:
+            self.messages.append('The {} at {}{} is not your piece to move.'.format(moved_piece, x1, y1))
             return False
-        elif move.dx == 0 and move.dy == 0:
-            self.message += 'You must move the piece at least one space.\n'
+        elif dx == 0 and dy == 0:
+            self.messages.append('You must move the piece at least one space.')
             return False
-        elif move.destination[0] == self.state[0]:
-            self.message += 'You cannot capture your own {}.\n'.format(move.destination)
+        elif captured_piece[0] == self.state[0]:
+            self.messages.append('You cannot capture your own {}.'.format(captured_piece))
             return False
         else:
             # Apply the piece-specific rules.
-            if move.piece[1] == 'B'\
-                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
-                    and abs(move.dx) == abs(move.dy):
-                self.message += 'Rules for \'{}\' were applied to \'{}\'.\n'.format('B', move.piece)
+            if moved_piece[1] == 'B'\
+                    and not self._collides(x1, y1, x2, y2)\
+                    and abs(dx) == abs(dy):
+                self.messages.append('Rules for {} were applied to {}.'.format('B', moved_piece))
                 return True
-            elif move.piece[1] == 'R'\
-                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
-                    and (move.dx == 0 or move.dy == 0):
-                self.message += 'Rules for \'{}\' were applied to \'{}\'.\n'.format('R', move.piece)
+            elif moved_piece[1] == 'R'\
+                    and not self._collides(x1, y1, x2, y2)\
+                    and (dx == 0 or dy == 0):
+                self.messages.append('Rules for {} were applied to {}.'.format('R', moved_piece))
                 return True
-            elif move.piece[1] == 'Q'\
-                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
-                    and ((abs(move.dx) == abs(move.dy)) or (move.dx == 0 or move.dy == 0)):
-                self.message += 'Rules for \'{}\' were applied to \'{}\'.\n'.format('Q', move.piece)
+            elif moved_piece[1] == 'Q'\
+                    and not self._collides(x1, y1, x2, y2)\
+                    and ((abs(dx) == abs(dy)) or (dx == 0 or dy == 0)):
+                self.messages.append('Rules for {} were applied to {}.'.format('Q', moved_piece))
                 return True
-            elif move.piece[1] == 'K'\
-                    and abs(move.dx) <= 1 and abs(move.dy) <= 1:
-                self.message += 'Rules for \'{}\' were applied to \'{}\'.\n'.format('K', move.piece)
+            elif moved_piece[1] == 'K'\
+                    and abs(dx) <= 1 and abs(dy) <= 1:
+                self.messages.append('Rules for {} were applied to {}.'.format('K', moved_piece))
                 return True
-            elif move.piece[1] == 'N'\
-                    and ((abs(move.dx) == 1 and abs(move.dy) == 2)\
-                    or (abs(move.dx) == 2 and abs(move.dy) == 1)):
-                self.message += 'Rules for \'{}\' were applied to \'{}\'.\n'.format('N', move.piece)
+            elif moved_piece[1] == 'N'\
+                    and ((abs(dx) == 1 and abs(dy) == 2)\
+                    or (abs(dx) == 2 and abs(dy) == 1)):
+                self.messages.append('Rules for {} were applied to {}.'.format('N', moved_piece))
                 return True
-            elif move.piece == 'BP'\
-                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
-                    and (move.dx == 0 and move.dy == 1 and move.destination == '')\
-                    or (abs(move.dx) == 1 and move.dy == 1 and move.destination != '')\
-                    or (move.y1 == 1 and move.dy == 2 and move.dx == 0):
-                self.message += 'Rules for \'{}\' were applied to \'{}\'.\n'.format('BP', move.piece)
+            elif moved_piece == 'BP'\
+                    and not self._collides(x1, y1, x2, y2)\
+                    and (dx == 0 and dy == 1 and captured_piece == '')\
+                    or (abs(dx) == 1 and dy == 1 and captured_piece != '')\
+                    or (y1 == 1 and dy == 2 and dx == 0):
+                self.messages.append('Rules for {} were applied to {}.'.format('BP', moved_piece))
                 return True
-            elif move.piece == 'WP'\
-                    and not self.collides(move.x1, move.y1, move.x2, move.y2)\
-                    and (move.dx == 0 and move.dy == -1 and move.destination == '')\
-                    or (abs(move.dx) == 1 and move.dy == -1 and move.destination != '')\
-                    or (move.y1 == 6 and move.dy == -2 and move.dx == 0):
-                self.message += 'Rules for \'{}\' were applied to \'{}\'.\n'.format('WP', move.piece)
+            elif moved_piece == 'WP'\
+                    and not self._collides(x1, y1, x2, y2)\
+                    and (dx == 0 and dy == -1 and captured_piece == '')\
+                    or (abs(dx) == 1 and dy == -1 and captured_piece != '')\
+                    or (y1 == 6 and dy == -2 and dx == 0):
+                self.messages.append('Rules for {} were applied to {}.'.format('WP', moved_piece))
                 return True
             else:
-                self.message += 'That is not a valid move for the {}.\n'.format(move.piece)
+                self.messages.append('That is not a valid move for the {}.'.format(moved_piece))
                 return False
 
-    def collides(self, x1, y1, x2, y2):
+    def _collides(self, x1, y1, x2, y2):
         '''Determines whether there is an obstacle in the line of movement or not.'''
         dx = x2 - x1
         dy = y2 - y1
@@ -237,12 +170,87 @@ class Chess(object):
             assert True, 'The move "{}{} {}{}" cannot be checked for collisions'.format(x1, y1, x2, y2)
 
         if collision:
-            self.message += '{} collided with {}.\n'.format(piece, obstacle)
+            self.messages.append('{} collided with {}.'.format(piece, obstacle))
+        
         return collision
+
+    def quit_game(self):
+        ''' Terminate the game. '''
+        self.messages.append('{} gave up and flipped the board.'.format(self.state))
+        self.state = 'NONE WINS'
+        self.messages.append('{}!'.format(self.state))
+    
+    def forfeit_turn(self):
+        ''' Skip player's turn '''
+        self.messages.append('{} forfeit their turn.'.format(self.state))
+        self.state = 'WHITE' if self.state == 'BLACK' else 'BLACK'
+        self.selection = []
+
+    def display_help(self):
+        ''' Show the help text. '''
+        self.messages.append('Enter one of the following commands: quit, help, pass, select, move.')
+        self.state = self.state
+
+    def add_selection(self, coordinate):
+        ''' Get selection input and store it. '''
+        if not coordinate.isnumeric():
+            self.messages.append('Coordinate selection input, {}, is not a numeric string.'.format(coordinate))
+            return False
+        elif len(coordinate) != 2:
+            self.messages.append('Coordinate selection input has {} digits, not 2.'.format(len(coordinate)))
+            return False
+        elif not 0 <= int(coordinate[0]) <= 7 or not 0 <= int(coordinate[1]) <= 7:
+            self.messages.append('{} is not within bounds of board.'.format(coordinate))
+            return False
+        else:
+            self.messages.append('{} selected coordinate {}.'.format(self.state, coordinate))
+            self.selection.append( (coordinate[0], coordinate[1]) )
+            return True
+    
+    def execute_move(self, x1, y1, x2, y2):
+        ''' Attempt to make a legal move with the entered coordinates. '''
+        if self._is_legal_move(x1, y1, x2, y2):
+            moved_piece = self.board[y1][x1]
+            captured_piece = self.board[y2][x2]
+            self.board[y2][x2] = moved_piece
+            self.board[y1][x1] = '  '
+            self.messages.append('Move {}{} to {}{} was executed by {}.'.format(x1, y1, x2, y2, self.state))
+            self.messages.append('{} captured {}.'.format(moved_piece, captured_piece))
+
+            if captured_piece == 'WK':
+                self.state = 'BLACK WINS'
+                self.messages.append('{}!'.format(self.state))
+            elif captured_piece == 'BK':
+                self.state = 'WHITE WINS'
+                self.messages.append('{}!'.format(self.state))
+            else:
+                self.state = 'WHITE' if self.state == 'BLACK' else 'BLACK'
+        else:
+            self.messages.append('Illegal move attempted. No move was executed.')
+
+        self.selection = []
 
 
 def main():
-    pass
+    chess = Chess()
+    print(chess)
+
+    chess.execute_move(4,6,4,4)
+    print(chess)
+    chess.execute_move(6,0,5,2)
+    print(chess)
+    chess.execute_move(3,7,3,4)
+    print(chess)
+    chess.execute_move(3,7,5,5)
+    print(chess)
+    chess.execute_move(5,2,4,4)
+    print(chess)
+    chess.execute_move(5,5,5,1)
+    print(chess)
+    chess.forfeit_turn()
+    chess.execute_move(5,1,4,0)
+    print(chess)
+
 
 # Only call main if program is run directly (not imported).
 if __name__ == '__main__':
