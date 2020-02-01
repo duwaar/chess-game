@@ -57,88 +57,12 @@ class Chess(object):
                       ['WR','WN','WB','WQ','WK','WB','WN','WR']]
         
         self.selection = []
-
-        '''
-        self.window = pyglet.window.Window(width=600, height=700)
-        self.window.set_caption('Python Chess')
-
-        self.batch = pyglet.graphics.Batch()
-        self.background = pyglet.graphics.OrderedGroup(0)
-        self.foreground = pyglet.graphics.OrderedGroup(1)
-
-        self.mouse_position = (0, 0)
-        self.mouse_click = (0, 0)
-
-        @self.window.event
-        def on_draw():
-            self.draw_board()
-
-        @self.window.event
-        def on_key_press(key, modifiers):
-            pass
-
-        @self.window.event
-        def on_mouse_motion(x, y, dx, dy):
-            pass
-
-        @self.window.event
-        def on_mouse_press(x, y, button, modifiers):
-            pass
-        '''
-
-    def play(self):
-        '''The main game'''
-        self.print_board()
-        input('The board is set. Hit enter to begin.')
-        self.message += 'Let the game begin!\n'
-        os.system('clear')
-        self.state = 'WHITE' # Because white always goes first.
-        play = True
-        while play:
-            # Provide feedback to player(s).
-            os.system('clear')
-            print(self.message)
-            self.message = ''
-
-            # Update the game state.
-            if self.state == 'NONE WINS'\
-                    or self.state == 'WHITE WINS'\
-                    or self.state == 'BLACK WINS':
-                play = False
-                self.message += '{}!'.format(self.state)
-            elif self.state == 'BLACK' or self.state == 'WHITE':
-                self.update()
-            else:
-                assert False, 'Impossible state {} requested.'.format(self.state)
-
-        print('{}'.format(self.message))
-
-    def update(self):
-        '''Execute move, and update display'''
-        self.print_board()
-        # Get sanitized user input.
-        command = input('{}, make your move: '.format(self.state)).strip().lower()
-        #self.draw_board()
-
-        # Execute the command.
-        if command == 'quit':
-            self.quit_game()
-        elif command == 'pass':
-            self.forfeit_turn()
-        elif command == 'help':
-            self.display_help()
-        elif command == 'select':
-            self.get_selection()
-        elif command == 'move':
-            self.execute_move()
-        else:
-            self.message += '\'{}\' is not a valid command.\n'.format(command)
-            self.state = self.state # Don't change the state.
     
     def quit_game(self):
         ''' Terminate the game. '''
         self.message += '{} gave up and flipped the board.\n'.format(self.state)
         self.state = 'NONE WINS'
+        self.message += '{}!'.format(self.state)
     
     def forfeit_turn(self):
         ''' Skip player's turn '''
@@ -151,12 +75,11 @@ class Chess(object):
         self.message += 'Enter one of the following commands: quit, help, pass, select, move.\n'
         self.state = self.state
 
-    def get_selection(self):
+    def add_selection(self, coordinate):
         ''' Get selection input and store it. '''
-        self.message += '{} selected a coordinate.\n'.format(self.state)
-        coordinate = input('Select a coordinate on the board: ')
         assert coordinate.isnumeric(), 'Coordinate selection input is not a numeric string.'
         assert len(coordinate) == 2, 'Coordinate selection input has {} digits, not 2.'.format(len(coordinate))
+        self.message += '{} selected a coordinate.\n'.format(self.state)
         self.selection.append( (coordinate[0], coordinate[1]) )
     
     def execute_move(self):
@@ -176,15 +99,22 @@ class Chess(object):
 
             if captured_piece == 'WK':
                 self.state = 'BLACK WINS'
+                self.message += '{}!'.format(self.state)
             elif captured_piece == 'BK':
                 self.state = 'WHITE WINS'
+                self.message += '{}!'.format(self.state)
             else:
                 self.state = 'WHITE' if self.state == 'BLACK' else 'BLACK'
-        
+
         self.selection = []
 
-    def print_board(self):
-        '''Print the board in the terminal.'''
+    def __repr__(self):
+        '''Print the game in the terminal.'''
+        print(self.message)
+        print()
+        print('State: {}'.format(self.state))
+        print()
+
         for i, row in enumerate(self.board):
             print(i, row)
             #print(8-i, row)
@@ -197,44 +127,6 @@ class Chess(object):
         print()
         print('Selections: {}'.format(self.selection))
         print()
-
-    def draw_board(self):
-        ''' Generate the board graphics in the game window. '''
-        # Basic dimensions
-        width, height = self.window.get_size()
-        margin = 16
-        if width <= height:
-            small_side = width
-            large_side = height
-        else:
-            small_side = height
-            large_side = width
-        
-        border = 16
-        board_side = small_side - border
-        square_side = board_side // 8
-
-        # The background
-        self.batch.add(4, pyglet.gl.GL_QUADS, self.background,\
-                ('v2i',    (0,      0,\
-                            0,      height,\
-                            width,  height,\
-                            width,  0)),\
-                ('c3B', (250, 250, 250) * 4))
-
-        # The foreground
-        pyglet.text.Label(text=self.message,\
-                    font_name='Courier New',\
-                    font_size=12,\
-                    color=(0, 0, 0, 255),\
-                    x=0, y=0,\
-                    width=width,\
-                    height=height - board_side - border,\
-                    anchor_x='left',\
-                    anchor_y='bottom',\
-                    multiline=True,\
-                    batch=self.batch,\
-                    group=self.foreground)
 
     def is_legal_move(self):
         ''' Checks if move is allowed in chess. '''
@@ -350,9 +242,7 @@ class Chess(object):
 
 
 def main():
-    chess = Chess()
-    chess.play()
-
+    pass
 
 # Only call main if program is run directly (not imported).
 if __name__ == '__main__':
