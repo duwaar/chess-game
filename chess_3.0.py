@@ -286,12 +286,12 @@ class ChessGame(pyglet.window.Window):
                          0,     height - board_side - margin)),\
                 ('c3B', (120, 120, 120) * 4))
         
-        # Draw the checker board.
+        # Draw the squares on the board.
         board_bottom = height - board_side
         board_left = margin
         for i in range(8):
             for j in range(8):
-                square_color = 255 if (i + j) % 2 == 0 else 0
+                square_color = (255, 255, 255) if (i + j) % 2 == 0 else (0, 0, 0)
                 square_bottom   = square_side *  j      + board_bottom
                 square_top      = square_side * (j + 1) + board_bottom
                 square_left     = square_side *  i      + board_left
@@ -302,7 +302,15 @@ class ChessGame(pyglet.window.Window):
                                  square_right, square_bottom,\
                                  square_right, square_top,\
                                  square_left,  square_top)),\
-                        ('c3B', (square_color, square_color, square_color) * 4))
+                        ('c3B', square_color * 4))
+        
+        # Draw the message box.
+        self.batch.add(4, pyglet.gl.GL_QUADS, self.background,\
+                ('v2i', (0,     0,\
+                         width, 0,\
+                         width, height - board_side - margin,\
+                         0,     height - board_side - margin)),\
+                ('c3B', (210, 210, 210) * 4))
         
 
     def draw_foreground(self):
