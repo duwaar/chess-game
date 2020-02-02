@@ -57,7 +57,7 @@ class Chess(object):
         string += 'State: {}\n'.format(self.state)
         string += 'Selections: {}\n'.format(self.selection)
         
-        string += 'Latest Messages:\n'
+        string += 'Buffered Messages:\n'
         for message in self.messages:
             string += '{}\n'.format(message)
         self.messages = []
@@ -174,6 +174,12 @@ class Chess(object):
         
         return collision
 
+    def read_messages(self):
+        ''' Returns all messages stored since last read, then deletes them. '''
+        message_list = self.messages
+        self.messages = []
+        return 
+
     def quit_game(self):
         ''' Terminate the game. '''
         self.messages.append('{} gave up and flipped the board.'.format(self.state))
@@ -235,8 +241,16 @@ class ChessGame(pyglet.window.Window):
     ''' Generates the graphics and gets the user input for the chess game. '''
     def __init__(self):
         super().__init__(width=520, height=700)
+
         self.set_caption('Python Chess')
         #self.set_icon('image.png')
+
+        width, height = self.get_size()
+        self.margin = 16
+        self.board_side = width - self.margin
+        self.board_bottom = height - self.board_side
+        self.board_left = self.margin
+        self.square_side = self.board_side // 8
 
         self.batch = pyglet.graphics.Batch()
         self.background = pyglet.graphics.OrderedGroup(0)
@@ -249,53 +263,55 @@ class ChessGame(pyglet.window.Window):
 
         @self.event
         def on_draw():
-            self.draw_background()
-            self.draw_foreground()
+            self._draw_background()
+            self._draw_foreground()
             self.batch.draw()
             self.batch = pyglet.graphics.Batch()
 
         @self.event
-        def on_key_press(key, mods):
-            pass
-
-        @self.event
         def on_mouse_motion(x, y, dx, dy):
-            pass
+            self.mouse_position = (x, y)
 
         @self.event
         def on_mouse_press(x, y, button, mods):
-            pass
+            self.mouse_press = (x, y)
         
         '''
         @self.event
         def on_close():
             pass
         '''
-    
-    def draw_background(self):
-        width, height = self.get_size()
-        margin = 16
-        board_side = width - margin
-        square_side = board_side // 8
 
+    def _pixel_to_square(self, coordinates):
+        square_i = (coordinates[0] - self.board_left)    // self.square_side
+        square_j = (coordinates[1] - self.board_bottom)  // self.square_side
+        return square_i, square_j
+
+    def _draw_background(self):
+        width, height = self.get_size()
         # Draw a border for the chess board.
         self.batch.add(4, pyglet.gl.GL_QUADS, self.background,\
                 ('v2i', (0,     height,\
                          width, height,\
-                         width, height - board_side - margin,\
-                         0,     height - board_side - margin)),\
+                         width, height - self.board_side - self.margin,\
+                         0,     height - self.board_side - self.margin)),\
                 ('c3B', (120, 120, 120) * 4))
         
         # Draw the squares on the board.
-        board_bottom = height - board_side
-        board_left = margin
+        mouseover = self._pixel_to_square(self.mouse_position)
         for i in range(8):
             for j in range(8):
-                square_color = (255, 255, 255) if (i + j) % 2 == 0 else (0, 0, 0)
-                square_bottom   = square_side *  j      + board_bottom
-                square_top      = square_side * (j + 1) + board_bottom
-                square_left     = square_side *  i      + board_left
-                square_right    = square_side * (i + 1) + board_left
+                square_bottom   = self.square_side *  j      + self.board_bottom
+                square_top      = self.square_side * (j + 1) + self.board_bottom
+                square_left     = self.square_side *  i      + self.board_left
+                square_right    = self.square_side * (i + 1) + self.board_left
+                
+                if mouseover[0] == i and mouseover[1] == j:
+                    square_color = (0, 240, 0)
+                elif (i + j) % 2 == 0:
+                    square_color = (240, 240, 255)
+                else:
+                    square_color = (0, 0, 0)
                 
                 self.batch.add(4, pyglet.gl.GL_QUADS, self.background,\
                         ('v2i', (square_left,  square_bottom,\
@@ -308,17 +324,13 @@ class ChessGame(pyglet.window.Window):
         self.batch.add(4, pyglet.gl.GL_QUADS, self.background,\
                 ('v2i', (0,     0,\
                          width, 0,\
-                         width, height - board_side - margin,\
-                         0,     height - board_side - margin)),\
+                         width, height - self.board_side - self.margin,\
+                         0,     height - self.board_side - self.margin)),\
                 ('c3B', (210, 210, 210) * 4))
         
-
-    def draw_foreground(self):
+    def _draw_foreground(self):
         pass
-
-    def set_board(self, board):
-        self.board = board
-    
+   
     def play(self):
         pyglet.app.run()
 
