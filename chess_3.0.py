@@ -29,20 +29,22 @@ class ChessGame(object):
     def __init__(self):
         '''Set the board and wait for the start signal.'''
         self.messages = []
-        self.board = [['BR','BN','BB','BQ','BK','BB','BN','BR'],\
-                      ['BP','BP','BP','BP','BP','BP','BP','BP'],\
-                      ['  ','  ','  ','  ','  ','  ','  ','  '],\
-                      ['  ','  ','  ','  ','  ','  ','  ','  '],\
-                      ['  ','  ','  ','  ','  ','  ','  ','  '],\
-                      ['  ','  ','  ','  ','  ','  ','  ','  '],\
-                      ['WP','WP','WP','WP','WP','WP','WP','WP'],\
-                      ['WR','WN','WB','WQ','WK','WB','WN','WR']]
+        self.board = [
+                ['WR','WN','WB','WK','WQ','WB','WN','WR'],
+                ['WP','WP','WP','WP','WP','WP','WP','WP'],
+                ['  ','  ','  ','  ','  ','  ','  ','  '],
+                ['  ','  ','  ','  ','  ','  ','  ','  '],
+                ['  ','  ','  ','  ','  ','  ','  ','  '],
+                ['  ','  ','  ','  ','  ','  ','  ','  '],
+                ['BP','BP','BP','BP','BP','BP','BP','BP'],
+                ['BR','BN','BB','BK','BQ','BB','BN','BR'],
+                ]
         self.state = 'WHITE'
         self.selection = []
     
     def __repr__(self):
         '''Print the game in the terminal.'''
-        return (self.board, self.state, self.selection, self.selection)
+        return (self.board, self.state, self.selection, self.messages)
     
     def __str__(self):
         string = ''
@@ -107,14 +109,14 @@ class ChessGame(object):
                     or (abs(dx) == 2 and abs(dy) == 1)):
                 self.messages.append('Rules for {} were applied to {}.'.format('N', moved_piece))
                 return True
-            elif moved_piece == 'BP'\
+            elif moved_piece == 'WP'\
                     and not self._collides(x1, y1, x2, y2)\
                     and (dx == 0 and dy == 1 and captured_piece == '')\
                     or (abs(dx) == 1 and dy == 1 and captured_piece != '')\
                     or (y1 == 1 and dy == 2 and dx == 0):
                 self.messages.append('Rules for {} were applied to {}.'.format('BP', moved_piece))
                 return True
-            elif moved_piece == 'WP'\
+            elif moved_piece == 'BP'\
                     and not self._collides(x1, y1, x2, y2)\
                     and (dx == 0 and dy == -1 and captured_piece == '')\
                     or (abs(dx) == 1 and dy == -1 and captured_piece != '')\
@@ -240,13 +242,14 @@ class ChessApp(pyglet.window.Window):
     ''' Generates the graphics and gets the user input for the chess game. '''
     def __init__(self):
         super().__init__(width=520, height=700)
+        #super().__init__(fullscreen=True)
 
         self.set_caption('Python Chess')
         #self.set_icon('image.png')
 
         width, height = self.get_size()
         self.margin = 16
-        self.board_side = width - self.margin
+        self.board_side = min([width, height]) - self.margin
         self.board_bottom = height - self.board_side
         self.board_left = self.margin
         self.square_side = self.board_side // 8
@@ -254,18 +257,22 @@ class ChessApp(pyglet.window.Window):
         self.batch = pyglet.graphics.Batch()
         self.background = pyglet.graphics.OrderedGroup(0)
         self.foreground = pyglet.graphics.OrderedGroup(1)
+        self.draw_sprites = []
 
         self.mouse_position = (0, 0)
         self.mouse_press = (0, 0)
 
         self.chess_game = ChessGame()
+        self.piece_images = self._load_piece_images()
 
         @self.event
         def on_draw():
             self._draw_background()
             self._draw_foreground()
             self.batch.draw()
+
             self.batch = pyglet.graphics.Batch()
+            self.draw_sprites = []
 
         @self.event
         def on_mouse_motion(x, y, dx, dy):
@@ -277,11 +284,29 @@ class ChessApp(pyglet.window.Window):
             coordinate = self._pixel_to_square((x, y))
             self.chess_game.add_selection(coordinate)
         
-        '''
-        @self.event
-        def on_close():
-            pass
-        '''
+    def _load_piece_images(self):
+        piece_names = [
+                ('BQ','b_queen.png'),
+                ('BK','b_king.png'),
+                ('BP','b_pawn.png'),
+                ('BN','b_knight.png'),
+                ('BR','b_rook.png'),
+                ('BB','b_bishop.png'),
+                ('WQ','w_queen.png'),
+                ('WK','w_king.png'),
+                ('WP','w_pawn.png'),
+                ('WN','w_knight.png'),
+                ('WR','w_rook.png'),
+                ('WB','w_bishop.png'),
+                ]
+        
+        piece_images = {}
+        for name in piece_names:
+            file_name = './assets/' + name[1]
+            image = pyglet.image.load(file_name, decoder=pyglet.image.codecs.png.PNGImageDecoder())
+            piece_images[name[0]] = image
+
+        return piece_images
 
     def _pixel_to_square(self, coordinate):
         square_i = (coordinate[0] - self.board_left)    // self.square_side
@@ -331,11 +356,28 @@ class ChessApp(pyglet.window.Window):
         
     def _draw_foreground(self):
         # Draw the pieces
+        for j, row in enumerate(self.chess_game.board):
+            for i, piece in enumerate(row):
+                if piece.strip() != '':
+                    sprite = pyglet.sprite.Sprite(
+                            self.piece_images[piece],
+                            batch=self.batch,
+                            group=self.foreground)
+                    rescale = self.square_side / sprite.width
+                    sprite.scale = rescale
+
+                    piece_left      = self.board_left   + i * self.square_side
+                    piece_bottom    = self.board_bottom + j * self.square_side
+                    sprite.update(x=piece_left, y=piece_bottom)
+
+                    self.draw_sprites.append(sprite)
+
         # Draw the messages
         messages = ''
-        for new_message in self.chess_game.read_messages(10):
-            messages = new_message + '\n' + messages
-        pyglet.text.Label(text=messages,
+        for new_message in self.chess_game.read_messages(9):
+            messages = messages + '-> ' + new_message + '\n'
+        pyglet.text.Label(
+                text=messages,
                 font_name='Courier New',
                 font_size=12,
                 color=(0, 0, 0, 255),
@@ -346,6 +388,7 @@ class ChessApp(pyglet.window.Window):
                 group=self.foreground)
    
     def play(self):
+        ''' Start the application. '''
         pyglet.app.run()
 
 

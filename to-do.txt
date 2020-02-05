@@ -1,23 +1,16 @@
 A to-do list of tasks for the python chess game.
 
 Known Bugs:
-
+ -The rules are not being applied correctly.
 Necessary:
- -Use the Chess.board array to hold more data than just names of pieces.
-     -piece names
-     -dimensions of each square
-     -selections
- -Implement graphics (probably with pyglet).
-    Of course, this is the point of the project, but it sure has taken a long time to get here. At
-    this point, the list of necessary graphics is something like,
-     -pieces
-     -mouseover and click highlights
- -Implement graphical input.
-    Split the "update" method into different methods for each input type/condition.
-
+ -Draw pieces on the board
+ -Hide window until everything is loaded
 Optional:
- -Add a border around the game window
- -Create a state class
+ -Add tooltips to make the game screen-reader accessible
+ -Add coordinate markers on the border of the board
+ -Create icon image
+ -Make it easier to download the game
+ -Implement verification in the pyglet.window.Window "on_close()" method
  -Network game (human to human)
  -Additional rules
      -Pawn promotion
