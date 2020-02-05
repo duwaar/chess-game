@@ -3,8 +3,6 @@ A to-do list of tasks for the python chess game.
 Known Bugs:
  -The rules are not being applied correctly.
 Necessary:
- -Draw pieces on the board
- -Hide window until everything is loaded
 Optional:
  -Add tooltips to make the game screen-reader accessible
  -Add coordinate markers on the border of the board

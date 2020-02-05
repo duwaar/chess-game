@@ -241,7 +241,7 @@ class ChessGame(object):
 class ChessApp(pyglet.window.Window):
     ''' Generates the graphics and gets the user input for the chess game. '''
     def __init__(self):
-        super().__init__(width=520, height=700)
+        super().__init__(width=520, height=700, visible=False)
         #super().__init__(fullscreen=True)
 
         self.set_caption('Python Chess')
@@ -283,6 +283,8 @@ class ChessApp(pyglet.window.Window):
             self.mouse_press = (x, y)
             coordinate = self._pixel_to_square((x, y))
             self.chess_game.add_selection(coordinate)
+        
+        self.set_visible(visible=True)
         
     def _load_piece_images(self):
         piece_names = [
