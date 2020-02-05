@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 '''
-cli-chess
-A command-line chess game.
+A chess game.
 
-14 July 2019
+Elaine Jeffery
+4 February 2020
 '''
 
 import os
@@ -21,7 +21,7 @@ def sign(x):
         return x // abs(x)
 
 
-class Chess(object):
+class ChessGame(object):
     '''
     The Chess object holds the game's state, playing pieces, board, and methods for moving and
     capturing pieces.
@@ -174,11 +174,9 @@ class Chess(object):
         
         return collision
 
-    def read_messages(self):
-        ''' Returns all messages stored since last read, then deletes them. '''
-        message_list = self.messages
-        self.messages = []
-        return 
+    def read_messages(self, num):
+        ''' Returns the specified number of messages from the end of the queue. '''
+        return self.messages[-num:]
 
     def quit_game(self):
         ''' Terminate the game. '''
@@ -199,18 +197,19 @@ class Chess(object):
 
     def add_selection(self, coordinate):
         ''' Get selection input and store it. '''
-        if not coordinate.isnumeric():
-            self.messages.append('Coordinate selection input, {}, is not a numeric string.'.format(coordinate))
-            return False
-        elif len(coordinate) != 2:
-            self.messages.append('Coordinate selection input has {} digits, not 2.'.format(len(coordinate)))
+        if type(coordinate) != tuple or len(coordinate) != 2:
+            self.messages.append('Received {}. Expected a tuple (x, y).'.format(coordinate))
             return False
         elif not 0 <= int(coordinate[0]) <= 7 or not 0 <= int(coordinate[1]) <= 7:
-            self.messages.append('{} is not within bounds of board.'.format(coordinate))
+            self.messages.append('Tuple {} is not within bounds of board.'.format(coordinate))
             return False
         else:
             self.messages.append('{} selected coordinate {}.'.format(self.state, coordinate))
             self.selection.append( (coordinate[0], coordinate[1]) )
+            if len(self.selection) > 1:
+                x1, y1 = self.selection[0]
+                x2, y2 = self.selection[1]
+                self.execute_move(x1, y1, x2, y2)
             return True
     
     def execute_move(self, x1, y1, x2, y2):
@@ -237,7 +236,7 @@ class Chess(object):
         self.selection = []
 
 
-class ChessGame(pyglet.window.Window):
+class ChessApp(pyglet.window.Window):
     ''' Generates the graphics and gets the user input for the chess game. '''
     def __init__(self):
         super().__init__(width=520, height=700)
@@ -259,7 +258,7 @@ class ChessGame(pyglet.window.Window):
         self.mouse_position = (0, 0)
         self.mouse_press = (0, 0)
 
-        self.chess = Chess()
+        self.chess_game = ChessGame()
 
         @self.event
         def on_draw():
@@ -275,6 +274,8 @@ class ChessGame(pyglet.window.Window):
         @self.event
         def on_mouse_press(x, y, button, mods):
             self.mouse_press = (x, y)
+            coordinate = self._pixel_to_square((x, y))
+            self.chess_game.add_selection(coordinate)
         
         '''
         @self.event
@@ -282,9 +283,9 @@ class ChessGame(pyglet.window.Window):
             pass
         '''
 
-    def _pixel_to_square(self, coordinates):
-        square_i = (coordinates[0] - self.board_left)    // self.square_side
-        square_j = (coordinates[1] - self.board_bottom)  // self.square_side
+    def _pixel_to_square(self, coordinate):
+        square_i = (coordinate[0] - self.board_left)    // self.square_side
+        square_j = (coordinate[1] - self.board_bottom)  // self.square_side
         return square_i, square_j
 
     def _draw_background(self):
@@ -329,37 +330,28 @@ class ChessGame(pyglet.window.Window):
                 ('c3B', (210, 210, 210) * 4))
         
     def _draw_foreground(self):
-        pass
+        # Draw the pieces
+        # Draw the messages
+        messages = ''
+        for new_message in self.chess_game.read_messages(10):
+            messages = new_message + '\n' + messages
+        pyglet.text.Label(text=messages,
+                font_name='Courier New',
+                font_size=12,
+                color=(0, 0, 0, 255),
+                anchor_x='left', x=0, width=self.width,
+                anchor_y='bottom', y=0, height=(self.height - self.board_side - self.margin),
+                multiline=True,
+                batch=self.batch,
+                group=self.foreground)
    
     def play(self):
         pyglet.app.run()
 
 
 def main():
-    game = ChessGame()
+    game = ChessApp()
     game.play()
-
-
-    '''
-    chess = Chess()
-    print(chess)
-
-    chess.execute_move(4,6,4,4)
-    print(chess)
-    chess.execute_move(6,0,5,2)
-    print(chess)
-    chess.execute_move(3,7,3,4)
-    print(chess)
-    chess.execute_move(3,7,5,5)
-    print(chess)
-    chess.execute_move(5,2,4,4)
-    print(chess)
-    chess.execute_move(5,5,5,1)
-    print(chess)
-    chess.forfeit_turn()
-    chess.execute_move(5,1,4,0)
-    print(chess)
-    '''
 
 
 # Only call main if program is run directly (not imported).
