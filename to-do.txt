@@ -1,7 +1,6 @@
 A to-do list of tasks for the python chess game.
 
 Known Bugs:
- -The rules are not being applied correctly.
 Necessary:
 Optional:
  -Add tooltips to make the game screen-reader accessible

@@ -109,18 +109,30 @@ class ChessGame(object):
                     or (abs(dx) == 2 and abs(dy) == 1)):
                 self.messages.append('Rules for {} were applied to {}.'.format('N', moved_piece))
                 return True
-            elif moved_piece == 'WP'\
-                    and not self._collides(x1, y1, x2, y2)\
-                    and (dx == 0 and dy == 1 and captured_piece == '')\
-                    or (abs(dx) == 1 and dy == 1 and captured_piece != '')\
-                    or (y1 == 1 and dy == 2 and dx == 0):
-                self.messages.append('Rules for {} were applied to {}.'.format('BP', moved_piece))
-                return True
             elif moved_piece == 'BP'\
                     and not self._collides(x1, y1, x2, y2)\
-                    and (dx == 0 and dy == -1 and captured_piece == '')\
-                    or (abs(dx) == 1 and dy == -1 and captured_piece != '')\
-                    or (y1 == 6 and dy == -2 and dx == 0):
+                    and ((dx == 0\
+                            and dy == -1\
+                            and captured_piece == '  ')\
+                        or (abs(dx) == 1\
+                            and dy == -1\
+                            and captured_piece != '  ')\
+                        or (y1 == 6\
+                            and dy == -2\
+                            and dx == 0)):
+                self.messages.append('Rules for {} were applied to {}.'.format('BP', moved_piece))
+                return True
+            elif moved_piece == 'WP'\
+                    and not self._collides(x1, y1, x2, y2)\
+                    and ((dx == 0\
+                            and dy == 1\
+                            and captured_piece == '  ')\
+                        or (abs(dx) == 1\
+                            and dy == 1\
+                            and captured_piece != '  ')\
+                        or (y1 == 1\
+                            and dy == 2\
+                            and dx == 0)):
                 self.messages.append('Rules for {} were applied to {}.'.format('WP', moved_piece))
                 return True
             else:
