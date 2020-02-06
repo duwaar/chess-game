@@ -211,6 +211,9 @@ class ChessGame(object):
 
     def add_selection(self, coordinate):
         ''' Get selection input and store it. '''
+        if self.state != 'WHITE' and self.state != 'BLACK':
+            self.messages.append('The game is over! {}!'.format(self.state))
+            return False
         if type(coordinate) != tuple or len(coordinate) != 2:
             self.messages.append('Received {}. Expected a tuple (x, y).'.format(coordinate))
             return False
@@ -254,10 +257,10 @@ class ChessApp(pyglet.window.Window):
     ''' Generates the graphics and gets the user input for the chess game. '''
     def __init__(self):
         super().__init__(width=520, height=700, visible=False)
-        #super().__init__(fullscreen=True)
 
         self.set_caption('Python Chess')
-        #self.set_icon('image.png')
+        icon = pyglet.image.load('assets/icon.png', decoder=pyglet.image.codecs.png.PNGImageDecoder())
+        self.set_icon(icon)
 
         width, height = self.get_size()
         self.margin = 16
@@ -316,7 +319,7 @@ class ChessApp(pyglet.window.Window):
         
         piece_images = {}
         for name in piece_names:
-            file_name = './assets/' + name[1]
+            file_name = 'assets/' + name[1]
             image = pyglet.image.load(file_name, decoder=pyglet.image.codecs.png.PNGImageDecoder())
             piece_images[name[0]] = image
 
