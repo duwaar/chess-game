@@ -5,8 +5,6 @@ Necessary:
 Optional:
  -Add tooltips to make the game screen-reader accessible
  -Add coordinate markers on the border of the board
- -Create icon image
- -Make it easier to download the game
  -Implement verification in the pyglet.window.Window "on_close()" method
  -Network game (human to human)
  -Additional rules
