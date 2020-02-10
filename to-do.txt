@@ -1,15 +1,18 @@
 A to-do list of tasks for the python chess game.
 
 Known Bugs:
+
 Necessary:
+
 Optional:
- -Add tooltips to make the game screen-reader accessible
- -Add coordinate markers on the border of the board
- -Implement verification in the pyglet.window.Window "on_close()" method
- -Network game (human to human)
  -Additional rules
      -Pawn promotion
      -Castling
      -Stalemate
+ -Add tooltips to make the game screen-reader accessible
+ -Add coordinate markers on the border of the board
+ -Implement verification in the pyglet.window.Window "on_close()" method
+ -Allow games to be saved/loaded
+ -Network game (human to human)
  -AI players
     Don't do this from scratch--use a free, open-source, chess engine, like stockfish.
